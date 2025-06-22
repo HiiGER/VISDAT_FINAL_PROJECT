@@ -57,4 +57,4 @@ Dataset yang digunakan: [Spotify 2023 - Kaggle](https://www.kaggle.com/datasets)
 
 ---
 
-> Proyek ini dibuat untuk tugas akhir Visualisasi Data UGM 2025. Selamat menikmati eksplorasi data musik! 🎶
+> Proyek ini dibuat untuk tugas akhir Visualisasi Data 2025. Selamat menikmati eksplorasi data musik! 🎶

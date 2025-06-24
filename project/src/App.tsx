@@ -152,7 +152,7 @@ function App() {
               <ModeDistributionChart tracks={filteredTracks} />
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="space-y-8">
               <AudioFeaturesRadar tracks={filteredTracks} />
               <BubbleChart tracks={filteredTracks} />
             </div>

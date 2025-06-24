@@ -16,9 +16,9 @@ const BubbleChart: React.FC<BubbleChartProps> = ({ tracks }) => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const margin = { top: 20, right: 20, bottom: 60, left: 60 };
-    const width = 600 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+    const margin = { top: 20, right: 40, bottom: 40, left: 200 };
+    const width = 700 - margin.left - margin.right;
+    const height = 500 - margin.top - margin.bottom;
 
     const g = svg
       .attr("width", width + margin.left + margin.right)
@@ -26,138 +26,87 @@ const BubbleChart: React.FC<BubbleChartProps> = ({ tracks }) => {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Prepare data
+    // Ambil 10 track teratas berdasarkan in_spotify_playlists
     const data = tracks
-      .filter(t => t.energy_percent > 0 && t.danceability_percent > 0 && t.valence_percent > 0)
-      .slice(0, 50) // Limit for performance
-      .map(track => ({
-        x: track.energy_percent,
-        y: track.danceability_percent,
-        z: track.valence_percent,
-        streams: track.streams,
-        name: track.track_name,
-        artist: track.artist_name
-      }));
+      .filter(t => typeof t.in_spotify_playlists === 'number')
+      .sort((a, b) => b.in_spotify_playlists - a.in_spotify_playlists)
+      .slice(0, 10);
 
-    // Scales
+    // Skala
     const xScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.x) as [number, number])
+      .domain([0, d3.max(data, d => d.in_spotify_playlists) || 1])
       .range([0, width]);
 
-    const yScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.y) as [number, number])
-      .range([height, 0]);
+    const yScale = d3.scaleBand()
+      .domain(data.map(d => d.track_name))
+      .range([0, height])
+      .padding(0.2);
 
-    const sizeScale = d3.scaleSqrt()
-      .domain(d3.extent(data, d => d.streams) as [number, number])
-      .range([3, 25]);
+    // Skala warna gradien
+    const colorScale = d3.scaleLinear<string>()
+      .domain([
+        d3.min(data, d => d.in_spotify_playlists) || 0,
+        d3.max(data, d => d.in_spotify_playlists) || 1
+      ])
+      .range(["#fde68a", "#fbbf24", "#a21caf"]);
 
-    const colorScale = d3.scaleSequential(d3.interpolateViridis)
-      .domain(d3.extent(data, d => d.z) as [number, number]);
-
-    // Add axes
+    // Sumbu X
     g.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xScale))
-      .append("text")
+      .call(d3.axisBottom(xScale).ticks(6))
+      .selectAll("text")
+      .attr("font-size", 12);
+
+    g.append("text")
       .attr("x", width / 2)
-      .attr("y", 40)
+      .attr("y", height + 35)
       .attr("fill", "#6b7280")
       .style("text-anchor", "middle")
-      .text("Energy %");
+      .text("Track In Spotify Playlists");
 
+    // Sumbu Y
     g.append("g")
       .call(d3.axisLeft(yScale))
-      .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", -40)
-      .attr("x", -height / 2)
-      .attr("fill", "#6b7280")
-      .style("text-anchor", "middle")
-      .text("Danceability %");
+      .selectAll("text")
+      .attr("font-size", 13)
+      .attr("fill", "#6b7280");
 
-    // Create tooltip
-    const tooltip = d3.select("body")
-      .append("div")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background", "rgba(255, 255, 255, 0.95)")
-      .style("padding", "12px")
-      .style("border-radius", "8px")
-      .style("box-shadow", "0 4px 12px rgba(0, 0, 0, 0.15)")
-      .style("font-size", "12px")
-      .style("max-width", "250px")
-      .style("z-index", "1000");
-
-    // Add bubbles
-    g.selectAll(".bubble")
+    // Bar
+    g.selectAll(".bar")
       .data(data)
-      .enter().append("circle")
-      .attr("class", "bubble")
-      .attr("cx", d => xScale(d.x))
-      .attr("cy", d => yScale(d.y))
-      .attr("r", 0)
-      .style("fill", d => colorScale(d.z))
-      .style("opacity", 0.7)
-      .style("stroke", "#fff")
-      .style("stroke-width", 1)
-      .style("cursor", "pointer")
-      .on("mouseover", function(event, d) {
-        d3.select(this)
-          .transition()
-          .duration(200)
-          .style("opacity", 1)
-          .attr("r", sizeScale(d.streams) * 1.2);
-        
-        tooltip
-          .html(`
-            <strong>${d.name}</strong><br/>
-            by ${d.artist}<br/>
-            Energy: ${d.x}%<br/>
-            Danceability: ${d.y}%<br/>
-            Valence: ${d.z}%<br/>
-            Streams: ${d.streams.toLocaleString()}
-          `)
-          .style("visibility", "visible");
-      })
-      .on("mousemove", function(event) {
-        tooltip
-          .style("top", (event.pageY - 10) + "px")
-          .style("left", (event.pageX + 10) + "px");
-      })
-      .on("mouseout", function(event, d) {
-        d3.select(this)
-          .transition()
-          .duration(200)
-          .style("opacity", 0.7)
-          .attr("r", sizeScale(d.streams));
-        
-        tooltip.style("visibility", "hidden");
-      })
-      .transition()
-      .duration(1000)
-      .delay((d, i) => i * 20)
-      .attr("r", d => sizeScale(d.streams));
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("y", d => yScale(d.track_name) || 0)
+      .attr("height", yScale.bandwidth())
+      .attr("x", 0)
+      .attr("width", d => xScale(d.in_spotify_playlists))
+      .attr("fill", d => colorScale(d.in_spotify_playlists))
+      .attr("rx", 6);
 
-    // Cleanup tooltip on component unmount
-    return () => {
-      d3.select("body").selectAll("div").filter(function() {
-        return d3.select(this).style("position") === "absolute" && 
-               d3.select(this).style("visibility") === "hidden";
-      }).remove();
-    };
+    // Label nilai di ujung bar
+    g.selectAll(".label")
+      .data(data)
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("x", d => xScale(d.in_spotify_playlists) + 8)
+      .attr("y", d => (yScale(d.track_name) || 0) + yScale.bandwidth() / 2 + 4)
+      .text(d => d.in_spotify_playlists)
+      .attr("fill", "#92400e")
+      .attr("font-size", 12);
+
   }, [tracks]);
 
   return (
     <div className="bg-gradient-to-br from-white/90 to-yellow-50/90 backdrop-blur-lg border border-yellow-200/50 rounded-2xl p-6 shadow-xl">
       <div className="flex items-center gap-3 mb-6">
         <Zap className="w-6 h-6 text-yellow-600" />
-        <h2 className="text-xl font-bold text-gray-900">Energy vs Danceability vs Valence</h2>
+        <h2 className="text-xl font-bold text-gray-900">Top 10 Tracks by Spotify Playlists</h2>
         <div className="ml-auto text-xs text-gray-500">
-          Bubble size = Streams, Color = Valence
+          Bar Chart: Playlist / track
         </div>
       </div>
-      
       <div className="flex justify-center">
         <svg ref={svgRef}></svg>
       </div>

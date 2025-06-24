@@ -43,14 +43,15 @@ const TopTracksChart: React.FC<TopTracksChartProps> = ({ tracks }) => {
       </div>
       
       <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={topTracks} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+        <BarChart data={topTracks} margin={{ top: 20, right: 30, left: 20, bottom: 90 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis 
             dataKey="name" 
             angle={-45}
             textAnchor="end"
-            height={60}
-            tick={{ fontSize: 12, fill: '#6b7280' }}
+            height={80}
+            interval={0}
+            tick={{ fontSize: 11, fill: '#6b7280' }}
           />
           <YAxis 
             tick={{ fontSize: 12, fill: '#6b7280' }}

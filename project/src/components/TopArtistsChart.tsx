@@ -62,6 +62,7 @@ const TopArtistsChart: React.FC<TopArtistsChartProps> = ({ tracks }) => {
             angle={-45}
             textAnchor="end"
             height={60}
+            interval={0}
             tick={{ fontSize: 12, fill: '#6b7280' }}
           />
           <YAxis 
